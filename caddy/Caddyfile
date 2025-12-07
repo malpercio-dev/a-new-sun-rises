@@ -1,5 +1,6 @@
 # Caddy Configuration for Matrix Server
-
+# Replace {{MATRIX_DOMAIN}} and {{ELEMENT_DOMAIN}} with your actual domains
+#
 # This configuration handles:
 # - Matrix homeserver (Synapse) via MAS
 # - Matrix Authentication Service (MAS)
@@ -19,7 +20,7 @@
 # ============================================
 # Matrix Homeserver and MAS
 # ============================================
-matrix.anewsunrises.com {
+chat.anewsunrises.com {
     # Logging
     log {
         output file /var/log/caddy/matrix.log
@@ -34,7 +35,7 @@ matrix.anewsunrises.com {
     # Matrix Client-Server API and Federation
     # These requests go to Synapse
     handle /_matrix/* {
-        reverse_proxy http://10.0.0.103:8008 {
+        reverse_proxy http://synapse:8008 {
             # Required headers for Synapse
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
@@ -49,21 +50,27 @@ matrix.anewsunrises.com {
     # Matrix Authentication Service (MAS) endpoints
     # MAS handles authentication and account management
     handle /oauth2/* {
-        reverse_proxy http://10.0.0.103:8080 {
+        reverse_proxy http://localhost:8080 {
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
         }
     }
 
     handle /account/* {
-        reverse_proxy http://10.0.0.103:8080 {
+        reverse_proxy http://localhost:8080 {
+            # Or if Caddy is on a separate server:
+            # reverse_proxy http://YOUR_MATRIX_SERVER_IP:8080 {
+
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
         }
     }
 
     handle /.well-known/oauth-authorization-server {
-        reverse_proxy http://10.0.0.103:8080 {
+        reverse_proxy http://localhost:8080 {
+            # Or if Caddy is on a separate server:
+            # reverse_proxy http://YOUR_MATRIX_SERVER_IP:8080 {
+
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
         }
@@ -71,7 +78,10 @@ matrix.anewsunrises.com {
 
     # Assets for MAS UI
     handle /assets/* {
-        reverse_proxy http://10.0.0.103:8080 {
+        reverse_proxy http://localhost:8080 {
+            # Or if Caddy is on a separate server:
+            # reverse_proxy http://YOUR_MATRIX_SERVER_IP:8080 {
+
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
         }
@@ -79,7 +89,10 @@ matrix.anewsunrises.com {
 
     # GraphQL endpoint for MAS
     handle /graphql {
-        reverse_proxy http://10.0.0.103:8080 {
+        reverse_proxy http://localhost:8080 {
+            # Or if Caddy is on a separate server:
+            # reverse_proxy http://YOUR_MATRIX_SERVER_IP:8080 {
+
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
         }
@@ -87,7 +100,83 @@ matrix.anewsunrises.com {
 
     # Root path - redirect to Element or show a landing page
     handle / {
-        redir https://element.anewsunrises.com permanent
+        redir https://{{ELEMENT_DOMAIN}} permanent
+    }
+
+    # Security headers
+    header {
+        # Security headers
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Remove server identification
+        -Server
+    }
+
+    # Rate limiting (adjust as needed)
+    # Requires caddy-ext/caddy-ext (plugin)
+    # See: https://caddyserver.com/docs/modules/http.handlers.rate_limit
+}
+
+# ============================================
+# MAS
+# ============================================
+auth.chat.anewsunrises.com {
+    # Logging
+    log {
+        output file /var/log/caddy/matrix.log
+        level INFO
+    }
+
+    # Request size limit for file uploads
+    request_body {
+        max_size 50MB
+    }
+
+    # Matrix Authentication Service (MAS) endpoints
+    # MAS handles authentication and account management
+    handle /oauth2/* {
+        reverse_proxy http://mas:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle /account/* {
+        reverse_proxy http://mas:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle /.well-known/oauth-authorization-server {
+        reverse_proxy http://mas:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Assets for MAS UI
+    handle /assets/* {
+        reverse_proxy http://mas:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # GraphQL endpoint for MAS
+    handle /graphql {
+        reverse_proxy http://mas:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Root path - redirect to Element or show a landing page
+    handle / {
+        redir https://element.chat.anewsunrises.com permanent
     }
 
     # Security headers
@@ -110,7 +199,7 @@ matrix.anewsunrises.com {
 # ============================================
 # Element Web Client
 # ============================================
-element.anewsunrises.com {
+element.chat.anewsunrises.com {
     # Logging
     log {
         output file /var/log/caddy/element.log
@@ -118,7 +207,7 @@ element.anewsunrises.com {
     }
 
     # Reverse proxy to Element Web container
-    reverse_proxy http://10.0.0.103:8082 {
+    reverse_proxy http://element:8082 {
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
     }
@@ -132,7 +221,7 @@ element.anewsunrises.com {
         Referrer-Policy "strict-origin-when-cross-origin"
 
         # Content Security Policy (adjust as needed for Element)
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://matrix.anewsunrises.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://chat.anewsunrises.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
 
         # Remove server identification
         -Server
@@ -157,8 +246,8 @@ element.anewsunrises.com {
 #
 # If you need to listen on port 8448, add this block:
 #
-# matrix.anewsunrises.com:8448 {
-#     reverse_proxy http://10.0.0.103:8008 {
+# chat.anewsunrises.com:8448 {
+#     reverse_proxy http://synapse:8008 {
 #         header_up X-Forwarded-For {remote_host}
 #         header_up X-Forwarded-Proto {scheme}
 #     }
@@ -170,7 +259,7 @@ element.anewsunrises.com {
 # Uncomment if you want to expose Element Admin via Caddy
 # WARNING: Restrict access to trusted IPs only!
 #
-# admin.matrix.anewsunrises.com {
+# admin.{{MATRIX_DOMAIN}} {
 #     # IP whitelist - CHANGE THESE IPs!
 #     @allowed {
 #         remote_ip 192.168.1.0/24 10.0.0.0/8
@@ -193,6 +282,14 @@ element.anewsunrises.com {
 # Notes:
 # ============================================
 #
+# 1. Replace {{MATRIX_DOMAIN}} with your Matrix server domain
+#    Example: matrix.example.com
+#
+# 2. Replace {{ELEMENT_DOMAIN}} with your Element client domain
+#    Example: element.example.com
+#
+# 3. Update email address in global options for Let's Encrypt
+#
 # 4. If Caddy is on a SEPARATE server from Matrix:
 #    - Uncomment the lines with YOUR_MATRIX_SERVER_IP
 #    - Replace localhost with your Matrix server IP
@@ -214,10 +311,10 @@ element.anewsunrises.com {
 #    - Setting up health checks and alerts
 #
 # 8. DNS Configuration Required:
-#    - A record: matrix.anewsunrises.com → Your server IP
-#    - A record: element.anewsunrises.com → Your server IP
+#    - A record: {{MATRIX_DOMAIN}} → Your server IP
+#    - A record: {{ELEMENT_DOMAIN}} → Your server IP
 #    - SRV record (optional, for federation):
-#      _matrix._tcp.matrix.anewsunrises.com → matrix.anewsunrises.com:443
+#      _matrix._tcp.{{MATRIX_DOMAIN}} → {{MATRIX_DOMAIN}}:443
 #
 # 9. Firewall Configuration:
 #    - Allow inbound: 80/tcp (HTTP, for ACME challenges)

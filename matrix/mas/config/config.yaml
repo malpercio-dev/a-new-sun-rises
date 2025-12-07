@@ -3,9 +3,11 @@
 
 # HTTP listener configuration
 http:
+  public_base: https://auth.chat.anewsunrises.com
   listeners:
     - name: web
-      bind: "0.0.0.0:8080"
+      binds:
+        - address: "0.0.0.0:8080"
       proxy_protocol: false
       resources:
         - name: discovery
@@ -20,7 +22,7 @@ http:
 database:
   # PostgreSQL connection string
   # Format: postgresql://user:password@host:port/database
-  uri: "postgresql://synapse:{{POSTGRES_PASSWORD}}@postgres:5432/synapse"
+  uri: "postgresql://matrix:{{POSTGRES_PASSWORD}}@postgres:5432/mas"
   # Connection pool settings
   min_connections: 5
   max_connections: 10
@@ -39,7 +41,7 @@ secrets:
 
 # Matrix homeserver configuration
 matrix:
-  homeserver: "matrix.anewsunrises.com"
+  homeserver: "chat.anewsunrises.com"
   # Secret token for MAS to call Synapse admin APIs
   # MUST match admin_token in homeserver.yaml
   secret: "ThisTokenIsStaticallyConfiguredAndShouldNotBeUsedInProduction"
@@ -62,7 +64,8 @@ passwords:
   enabled: true
   schemes:
     - version: 1
-      algorithm: "bcrypt"
+      algorithm: argon2id
+  minimum_complexity: 3
 
 # Registration settings
 # matrix.registration controls who can create new accounts

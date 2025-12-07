@@ -2,10 +2,10 @@
 # Replace all {{PLACEHOLDER}} values with your actual configuration
 
 # Server name - This is your Matrix domain (e.g., matrix.example.com)
-server_name: "anewsunrises.com"
+server_name: "chat.anewsunrises.com"
 
 # Public base URL for client API
-public_baseurl: "https://matrix.anewsunrises.com/"
+public_baseurl: "https://chat.anewsunrises.com/"
 
 # Listeners
 listeners:
@@ -23,7 +23,7 @@ listeners:
 database:
   name: psycopg2
   args:
-    user: synapse
+    user: matrix
     password: "{{POSTGRES_PASSWORD}}" # MUST match POSTGRES_PASSWORD in .env
     database: synapse
     host: postgres
@@ -50,7 +50,7 @@ experimental_features:
   msc3861:
     enabled: true
     # MAS issuer URL
-    issuer: "https://matrix.anewsunrises.com/"
+    issuer: "https://chat.anewsunrises.com/"
     # Client ID for Synapse
     client_id: "0000000000000000000SYNAPSE"
     # Client auth method
@@ -60,17 +60,17 @@ experimental_features:
     # Admin token for MAS to call Synapse admin APIs
     admin_token: "ThisTokenIsStaticallyConfiguredAndShouldNotBeUsedInProduction"
     # Account management URL (redirects users to MAS)
-    account_management_url: "https://matrix.anewsunrises.com/account/"
+    account_management_url: "https://chat.anewsunrises.com/account/"
 
 # Signing Keys
-signing_key_path: "/data/matrix.anewsunrises.com.signing.key"
+signing_key_path: "/data/chat.anewsunrises.com.signing.key"
 
 # Trusted key servers for federation
 trusted_key_servers:
   - server_name: "matrix.org"
 
 # Logging
-log_config: "/data/matrix.anewsunrises.com.log.config"
+log_config: "/data/chat.anewsunrises.com.log.config"
 
 # Rate limiting
 rc_message:
@@ -103,7 +103,7 @@ federation_domain_whitelist: [] # Empty = allow all
 federation_enabled: false
 
 # URL preview settings (optional)
-url_preview_enabled: true
+url_preview_enabled: false
 # url_preview_ip_range_blacklist:
 #   - '127.0.0.0/8'
 #   - '10.0.0.0/8'

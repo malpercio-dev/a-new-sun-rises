@@ -7,13 +7,11 @@ services:
     image: postgres:16-alpine
     container_name: matrix-postgres
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: synapse
-      POSTGRES_USER: synapse
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    user: "1000:1000"
+    env_file: ./workloads/postgres/.env
     volumes:
       - ./volumes/postgres/data:/var/lib/postgresql/data
+      - ./workloads/postgres/scripts/create-multiple-databaes.sh:/docker-entrypoint-initdb.d/create-multiple-databases.sh
     networks:
       - matrix
     healthcheck:
@@ -27,14 +25,15 @@ services:
     image: matrixdotorg/synapse:latest
     container_name: matrix-synapse
     restart: unless-stopped
+    user: "1000:1000"
     ports:
       - "8008:8008" # Client API (expose to reverse proxy)
       - "8448:8448" # Federation API (expose if federating)
     volumes:
-      - ./volumes/synapse/data:/data
-      - ./workloads/matrix/synapse/config/homeserver.yaml:/data/homeserver.yaml:ro
+      - ./volumes/synapse/data:/data:z
+      - ./workloads/matrix/synapse/config:/data/config:z
     environment:
-      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+      - SYNAPSE_CONFIG_PATH=/data/config/homeserver.yaml
     networks:
       - matrix
     depends_on:
@@ -49,15 +48,16 @@ services:
   # Matrix Authentication Service (MAS)
   # Handles OIDC authentication for Synapse
   mas:
-    image: ghcr.io/element-hq/matrix-authentication-service:0.13.3
+    image: ghcr.io/element-hq/matrix-authentication-service:latest
     container_name: matrix-mas
     restart: unless-stopped
+    user: "1000:1000"
     ports:
       - "8080:8080" # MAS API (expose to reverse proxy)
     volumes:
-      - ./workloads/matrix/mas/config/config.yaml:/config.yaml:ro
+      - ./workloads/matrix/mas/config:/config:ro
       - ./volumes/mas/data:/data
-    command: ["server", "-c", "/config.yaml"]
+    command: ["server", "-c", "/config/config.yaml"]
     networks:
       - matrix
     depends_on:
@@ -76,10 +76,11 @@ services:
     image: vectorim/element-web:latest
     container_name: matrix-element
     restart: unless-stopped
+    user: "1000:1000"
     ports:
       - "8082:80" # Web interface (expose to reverse proxy)
     volumes:
-      - ./workloads/matrix/element/config/config.json:/app/config.json:ro
+      - ./workloads/matrix/element/config:/app:ro
     networks:
       - matrix
 
@@ -88,10 +89,49 @@ services:
     image: awesometechnologies/synapse-admin:latest
     container_name: matrix-element-admin
     restart: unless-stopped
+    user: "1000:1000"
     ports:
       - "8081:80" # Admin interface (consider restricting access)
     networks:
       - matrix
+
+  # Caddy - Reverse proxy
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    user: "1000:1000"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # For HTTP/3
+    volumes:
+      - ./workloads/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./workloads/caddy/site:/srv
+      - ./volumes/caddy/data:/data
+      - ./volumes/caddy/config:/config
+
+    # Cloudflare Tunnel Service
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    user: "1000:1000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+    network_mode: "host"
+    command: tunnel run
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./workloads/cloudflare-tunnel/hosts:/etc/hosts
+    env_file: ./workloads/cloudflare-tunnel/.env
+    healthcheck:
+      test: ["CMD", "cloudflared", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   matrix:
