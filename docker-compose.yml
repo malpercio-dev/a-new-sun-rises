@@ -89,11 +89,13 @@ services:
 
   # Element Admin - Admin Interface
   element-admin:
-    image: awesometechnologies/synapse-admin:latest
+    image: oci.element.io/element-admin:latest
     container_name: matrix-element-admin
     restart: unless-stopped
     ports:
-      - "8081:80" # Admin interface (consider restricting access)
+      - "8083:80" # Admin interface (consider restricting access)
+    environment:
+      - SERVER_NAME=chat.anewsunrises.com
     networks:
       - matrix
 

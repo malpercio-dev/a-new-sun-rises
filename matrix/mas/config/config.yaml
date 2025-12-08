@@ -17,6 +17,7 @@ http:
         - name: graphql
           playground: false
         - name: assets
+        - name: adminapi
     - name: internal
       resources:
         - name: health
@@ -86,6 +87,9 @@ registration:
 account:
   email_change_allowed: true
   display_name_change_allowed: true
+  registration_token_required: true
+  password_registration_enabled: true
+  password_registration_email_required: false
 # Policy URLs (optional)
 # policy:
 #   terms_of_service:
