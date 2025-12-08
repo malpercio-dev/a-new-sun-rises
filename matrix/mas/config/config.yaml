@@ -3,7 +3,7 @@
 
 # HTTP listener configuration
 http:
-  public_base: https://auth.chat.anewsunrises.com
+  public_base: https://chat-auth.anewsunrises.com
   listeners:
     - name: web
       binds:
@@ -17,6 +17,12 @@ http:
         - name: graphql
           playground: false
         - name: assets
+    - name: internal
+      resources:
+        - name: health
+      binds:
+        - address: "0.0.0.0:8081"
+      proxy_protocol: false
 
 # Database configuration
 database:

@@ -16,7 +16,16 @@ listeners:
     x_forwarded: true
     bind_addresses: ["0.0.0.0"]
     resources:
-      - names: [client, federation]
+      - names: [client]
+        compress: false
+  # Federation API
+  - port: 8448
+    tls: false # TLS termination handled by reverse proxy
+    type: http
+    x_forwarded: true
+    bind_addresses: ["0.0.0.0"]
+    resources:
+      - names: [federation]
         compress: false
 
 # Database configuration
@@ -50,7 +59,7 @@ experimental_features:
   msc3861:
     enabled: true
     # MAS issuer URL
-    issuer: "https://chat.anewsunrises.com/"
+    issuer: "https://chat-auth.anewsunrises.com/"
     # Client ID for Synapse
     client_id: "0000000000000000000SYNAPSE"
     # Client auth method
@@ -60,7 +69,7 @@ experimental_features:
     # Admin token for MAS to call Synapse admin APIs
     admin_token: "ThisTokenIsStaticallyConfiguredAndShouldNotBeUsedInProduction"
     # Account management URL (redirects users to MAS)
-    account_management_url: "https://chat.anewsunrises.com/account/"
+    account_management_url: "https://chat-auth.anewsunrises.com/"
 
 # Signing Keys
 signing_key_path: "/data/chat.anewsunrises.com.signing.key"
@@ -155,6 +164,7 @@ caches:
 # enable_metrics: true
 # metrics_port: 9000
 
+serve_server_wellknown: true
 # ============================================
 # Important Notes:
 # ============================================

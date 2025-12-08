@@ -8,10 +8,10 @@ services:
     container_name: matrix-postgres
     restart: unless-stopped
     user: "1000:1000"
-    env_file: ./workloads/postgres/.env
+    env_file: ./workloads/matrix/postgres/.env
     volumes:
       - ./volumes/postgres/data:/var/lib/postgresql/data
-      - ./workloads/postgres/scripts/create-multiple-databaes.sh:/docker-entrypoint-initdb.d/create-multiple-databases.sh
+      - ./workloads/matrix/postgres/scripts/create-multiple-databases.sh:/docker-entrypoint-initdb.d/create-multiple-databases.sh
     networks:
       - matrix
     healthcheck:
@@ -34,6 +34,8 @@ services:
       - ./workloads/matrix/synapse/config:/data/config:z
     environment:
       - SYNAPSE_CONFIG_PATH=/data/config/homeserver.yaml
+      - UID=1000
+      - GID=1000
     networks:
       - matrix
     depends_on:
@@ -51,9 +53,9 @@ services:
     image: ghcr.io/element-hq/matrix-authentication-service:latest
     container_name: matrix-mas
     restart: unless-stopped
-    user: "1000:1000"
     ports:
       - "8080:8080" # MAS API (expose to reverse proxy)
+      - "8081:8081" # health check
     volumes:
       - ./workloads/matrix/mas/config:/config:ro
       - ./volumes/mas/data:/data
@@ -66,21 +68,22 @@ services:
       synapse:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
   # Element Web - Matrix Web Client
   element:
-    image: vectorim/element-web:latest
+    image: vectorim/element-web:develop
     container_name: matrix-element
     restart: unless-stopped
-    user: "1000:1000"
     ports:
-      - "8082:80" # Web interface (expose to reverse proxy)
+      - "8082:8082" # Web interface (expose to reverse proxy)
     volumes:
-      - ./workloads/matrix/element/config:/app:ro
+      - ./workloads/matrix/element/config/config.json:/app/config.json:ro
+    environment:
+      - ELEMENT_WEB_PORT=8082
     networks:
       - matrix
 
@@ -89,32 +92,15 @@ services:
     image: awesometechnologies/synapse-admin:latest
     container_name: matrix-element-admin
     restart: unless-stopped
-    user: "1000:1000"
     ports:
       - "8081:80" # Admin interface (consider restricting access)
     networks:
       - matrix
 
-  # Caddy - Reverse proxy
-  caddy:
-    image: caddy:latest
-    restart: unless-stopped
-    user: "1000:1000"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp" # For HTTP/3
-    volumes:
-      - ./workloads/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - ./workloads/caddy/site:/srv
-      - ./volumes/caddy/data:/data
-      - ./volumes/caddy/config:/config
-
     # Cloudflare Tunnel Service
   cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    user: "1000:1000"
     logging:
       driver: "json-file"
       options:

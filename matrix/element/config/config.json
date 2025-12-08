@@ -1,11 +1,9 @@
 {
   "default_server_config": {
-    "m.homeserver": {
-      "base_url": "https://chat.anewsunrises.com",
-      "server_name": "chat.anewsunrises.com"
-    },
-    "m.identity_server": {
-      "base_url": "https://vector.im"
+    "m.homeserver": { "base_url": "https://chat.anewsunrises.com/" },
+    "org.matrix.msc2965.authentication": {
+      "issuer": "https://chat-auth.anewsunrises.com/",
+      "account": "https://chat-auth.anewsunrises.com/"
     }
   },
   "brand": "Element",
@@ -44,7 +42,7 @@
     "feature_thread": true,
     "feature_element_call_video_rooms": false
   },
-  "permalink_prefix": "https://element.chat.anewsunrises.com",
+  "permalink_prefix": "https://element.anewsunrises.com",
   "disable_guests": true,
   "disable_login_language_selector": false,
   "disable_3pid_login": false
